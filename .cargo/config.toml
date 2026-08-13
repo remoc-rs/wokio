@@ -1,0 +1,7 @@
+[target.wasm32-unknown-unknown]
+runner = "wasm-bindgen-test-runner"
+
+[target.wasm32-wasip1-threads]
+# for WASI on the web (`web` feature enabled):
+#runner = "wasm-bindgen-test-runner"
+#rustflags = ["-Z", "wasi-exec-model=reactor"]

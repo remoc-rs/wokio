@@ -1,0 +1,141 @@
+name: Rust
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rustfmt:
+    name: Check formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+  msrv:
+    name: Check with MSRV
+    runs-on: ubuntu-latest
+    env:
+      minrust: 1.95
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      - name: Install Rust ${{ env.minrust }}
+        run: |
+          rustup default ${{ env.minrust }}
+          rustup target add wasm32-unknown-unknown
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run cargo check
+        run: |
+          cargo check --all-features
+          cargo check --target wasm32-unknown-unknown --all-features
+
+  clippy:
+    name: Clippy
+    needs: [msrv]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      - name: Install target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run clippy
+        run: |
+          cargo clippy --all-targets --all-features
+          cargo clippy --target wasm32-unknown-unknown --all-features
+
+  build-docs:
+    name: Build docs
+    needs: [msrv]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      - name: Install nightly Rust
+        run: |
+          rustup install nightly
+          rustup target add --toolchain nightly wasm32-unknown-unknown
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build docs
+        env:
+          RUSTDOCFLAGS: --cfg docsrs -D rustdoc::broken_intra_doc_links
+        run: |
+          cargo +nightly doc --no-deps --all-features
+          cargo +nightly doc --no-deps --target wasm32-unknown-unknown --all-features
+
+  test:
+    name: Test on native
+    needs: [msrv]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run cargo test
+        run: |
+          cargo test
+          cargo test --all-features
+
+      - name: Run cargo test tokio_unstable
+        env:
+          RUSTFLAGS: --cfg tokio_unstable
+        run: cargo test --all-features
+
+  test-web:
+    name: Test in browser
+    needs: [msrv]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+
+      - name: Install target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install wasm-bindgen-test-runner
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: wasm-bindgen-cli
+          # Must match the wasm-bindgen version used by the crate.
+          version: "0.2.127"
+
+      - name: Install ChromeDriver
+        uses: nanasess/setup-chromedriver@v2
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests in browser
+        env:
+          CHROMEDRIVER: /usr/local/bin/chromedriver
+          WASM_BINDGEN_USE_BROWSER: 1
+          WASM_BINDGEN_TEST_TIMEOUT: 90
+        run: cargo test --target wasm32-unknown-unknown --all-features --release --tests
