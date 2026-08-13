@@ -81,6 +81,35 @@ pub trait HandleExt {
         R: Send + 'static;
 }
 
+/// A future that can be run as a task on this platform.
+///
+/// This is automatically implemented and requires [`Send`] on platforms
+/// where tasks can be moved between threads.
+pub trait MaybeSendFuture: Future + MaybeSend {}
+impl<T> MaybeSendFuture for T where T: Future + MaybeSend + ?Sized {}
+
+/// A boxed future that can be run as a task on this platform.
+///
+/// This corresponds to [`futures::future::BoxFuture`] on native platforms
+/// and to [`futures::future::LocalBoxFuture`] on the web.
+pub type BoxFuture<'a, T> = Pin<Box<dyn MaybeSendFuture<Output = T> + 'a>>;
+
+/// [`Future`] extensions.
+pub trait MaybeSendFutureExt<'a>: Future + MaybeSend + 'a {
+    /// Boxes this future, erasing its type.
+    ///
+    /// This is the platform-dependent equivalent of
+    /// [`FutureExt::boxed`](futures::FutureExt::boxed).
+    fn maybe_boxed(self) -> BoxFuture<'a, Self::Output>
+    where
+        Self: Sized,
+    {
+        Box::pin(self)
+    }
+}
+
+impl<'a, T> MaybeSendFutureExt<'a> for T where T: Future + MaybeSend + 'a {}
+
 /// [`JoinSet`](crate::task::JoinSet) extensions.
 pub trait JoinSetExt<T> {
     /// Spawns a task on the JoinSet providing a name for diagnostic purposes.

@@ -17,7 +17,7 @@ use super::runtime::Handle;
 #[doc(no_inline)]
 pub use tokio::task::{LocalKey, Unconstrained, futures, unconstrained, yield_now};
 
-pub use crate::ext::{JoinSetExt, has_threads};
+pub use crate::ext::{BoxFuture, JoinSetExt, MaybeSendFuture, MaybeSendFutureExt, has_threads};
 
 /// Whether blocking the current thread is allowed.
 ///
@@ -237,6 +237,13 @@ pub fn block_on<F: Future>(future: F) -> F::Output {
 /// requirement and is implemented for every type.
 pub trait MaybeSend {}
 impl<T: ?Sized> MaybeSend for T {}
+
+/// The [Sync] bound required to share a value between tasks on this platform.
+///
+/// On the web tasks run on the same thread, thus this imposes no
+/// requirement and is implemented for every type.
+pub trait MaybeSync {}
+impl<T: ?Sized> MaybeSync for T {}
 
 /// An owned permission to abort a spawned task, without awaiting its completion.
 #[derive(Clone)]

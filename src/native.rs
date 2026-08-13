@@ -22,7 +22,7 @@ pub mod task {
     #[doc(no_inline)]
     pub use tokio::task::{LocalKey, Unconstrained, futures, unconstrained, yield_now};
 
-    pub use crate::ext::{JoinSetExt, has_threads};
+    pub use crate::ext::{BoxFuture, JoinSetExt, MaybeSendFuture, MaybeSendFutureExt, has_threads};
 
     /// Whether blocking the current thread is allowed.
     ///
@@ -91,6 +91,12 @@ pub mod task {
     /// On native platforms tasks may be moved between threads, thus this requires [Send].
     pub trait MaybeSend: Send {}
     impl<T: Send + ?Sized> MaybeSend for T {}
+
+    /// The [Sync] bound required to share a value between tasks on this platform.
+    ///
+    /// On native platforms tasks may run on different threads, thus this requires [Sync].
+    pub trait MaybeSync: Sync {}
+    impl<T: Sync + ?Sized> MaybeSync for T {}
 }
 
 /// Time.
