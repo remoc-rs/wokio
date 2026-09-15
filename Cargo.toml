@@ -1,6 +1,6 @@
 [package]
 name = "wokio"
-version = "0.1.1"
+version = "0.1.2"
 description = "🕸️ Tokio API for the web — async tasks and timers on browsers and web workers."
 keywords = ["tokio", "wasm", "web", "async", "browser"]
 categories = ["asynchronous", "wasm", "web-programming"]
