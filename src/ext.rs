@@ -6,6 +6,7 @@
 use futures::Stream;
 use std::{
     future::Future,
+    ops::{Deref, DerefMut},
     pin::Pin,
     task::{Context, Poll},
     time::Duration,
@@ -130,6 +131,60 @@ pub trait JoinSetExt<T> {
     where
         F: FnOnce() -> T + Send + 'static,
         T: Send;
+}
+
+/// An owned permission to join on a task that aborts the task when dropped.
+#[derive(Debug)]
+pub struct AbortOnDrop<T>(Option<JoinHandle<T>>);
+
+impl<T> AbortOnDrop<T> {
+    /// Takes ownership of the task, aborting it when this is dropped.
+    pub fn new(handle: JoinHandle<T>) -> Self {
+        Self(Some(handle))
+    }
+
+    /// Releases the task, returning its [`JoinHandle`] without aborting it.
+    pub fn into_inner(mut self) -> JoinHandle<T> {
+        self.0.take().expect("join handle present")
+    }
+
+    fn handle(&self) -> &JoinHandle<T> {
+        self.0.as_ref().expect("join handle present")
+    }
+
+    fn handle_mut(&mut self) -> &mut JoinHandle<T> {
+        self.0.as_mut().expect("join handle present")
+    }
+}
+
+impl<T> Drop for AbortOnDrop<T> {
+    fn drop(&mut self) {
+        if let Some(handle) = &self.0 {
+            handle.abort();
+        }
+    }
+}
+
+impl<T> Deref for AbortOnDrop<T> {
+    type Target = JoinHandle<T>;
+
+    fn deref(&self) -> &JoinHandle<T> {
+        self.handle()
+    }
+}
+
+impl<T> DerefMut for AbortOnDrop<T> {
+    fn deref_mut(&mut self) -> &mut JoinHandle<T> {
+        self.handle_mut()
+    }
+}
+
+impl<T> Future for AbortOnDrop<T> {
+    type Output = <JoinHandle<T> as Future>::Output;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        Pin::new(self.handle_mut()).poll(cx)
+    }
 }
 
 /// A stream that produces an event at a fixed time interval.

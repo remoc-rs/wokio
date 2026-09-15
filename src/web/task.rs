@@ -17,7 +17,7 @@ use super::runtime::Handle;
 #[doc(no_inline)]
 pub use tokio::task::{LocalKey, Unconstrained, futures, unconstrained, yield_now};
 
-pub use crate::ext::{BoxFuture, JoinSetExt, MaybeSendFuture, MaybeSendFutureExt, has_threads};
+pub use crate::ext::{AbortOnDrop, BoxFuture, JoinSetExt, MaybeSendFuture, MaybeSendFutureExt, has_threads};
 
 /// Whether blocking the current thread is allowed.
 ///
