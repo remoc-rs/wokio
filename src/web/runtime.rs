@@ -1,7 +1,7 @@
 //! The runtime.
 
 use futures::FutureExt;
-use std::{error::Error, fmt, future::Future, panic};
+use std::{error::Error, fmt, future::Future, marker::PhantomData, panic};
 use tokio::sync::oneshot;
 
 use super::{
@@ -23,6 +23,12 @@ impl fmt::Display for TryCurrentError {
 
 impl Error for TryCurrentError {}
 
+/// Runtime context guard returned by [`Handle::enter`].
+///
+/// The web's runtime is available everywhere, so this does nothing.
+#[derive(Debug)]
+pub struct EnterGuard<'a>(PhantomData<&'a Handle>);
+
 /// Handle to the virtual runtime.
 #[derive(Debug, Clone)]
 pub struct Handle;
@@ -31,6 +37,13 @@ impl Handle {
     /// Returns a Handle view over the currently running Runtime.
     pub fn current() -> Self {
         Self
+    }
+
+    /// Enters the runtime context.
+    ///
+    /// This does nothing on the web.
+    pub fn enter(&self) -> EnterGuard<'_> {
+        EnterGuard(PhantomData)
     }
 
     /// Returns a Handle view over the currently running Runtime.
