@@ -120,12 +120,25 @@ jobs:
       - name: Install target
         run: rustup target add wasm32-unknown-unknown
 
+      - name: Determine wasm-bindgen version
+        id: wasm-bindgen
+        run: |
+          version=$(cargo metadata --format-version 1 --all-features \
+            --filter-platform wasm32-unknown-unknown |
+            jq -r '.packages[] | select(.name == "wasm-bindgen") | .version')
+          if [ -z "$version" ]; then
+            echo "could not determine wasm-bindgen version" >&2
+            exit 1
+          fi
+          echo "resolved wasm-bindgen $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Install wasm-bindgen-test-runner
         uses: baptiste0928/cargo-install@v3
         with:
           crate: wasm-bindgen-cli
           # Must match the wasm-bindgen version used by the crate.
-          version: "0.2.127"
+          version: ${{ steps.wasm-bindgen.outputs.version }}
 
       - name: Install ChromeDriver
         uses: nanasess/setup-chromedriver@v2
