@@ -1,4 +1,3 @@
-#![cfg_attr(not(all(target_family = "wasm", feature = "web")), forbid(unsafe_code))]
 #![deny(unsafe_code)]
 #![warn(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -16,6 +15,7 @@ cfg_select! {
 }
 
 mod ext;
+mod thread_bound;
 
 #[doc(no_inline)]
 pub use tokio::{io, join, pin, select, sync, task_local, try_join};

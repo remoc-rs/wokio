@@ -4,7 +4,7 @@ use std::time::Duration;
 use wokio::{
     runtime::{Handle, HandleExt},
     sync::mpsc,
-    task::{self, JoinSetExt},
+    task::{self, JoinSetExt, ThreadBound},
     time,
 };
 
@@ -256,4 +256,28 @@ async fn task_local() {
 #[cfg_attr(all(target_family = "wasm", feature = "web"), wasm_bindgen_test)]
 async fn unconstrained() {
     assert_eq!(task::unconstrained(async { 42 }).await, 42);
+}
+
+#[cfg_attr(not(all(target_family = "wasm", feature = "web")), tokio::test)]
+#[cfg_attr(all(target_family = "wasm", feature = "web"), wasm_bindgen_test)]
+async fn thread_bound_is_send_and_usable_on_home_thread() {
+    fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<ThreadBound<std::rc::Rc<u32>>>();
+
+    let mut tb = ThreadBound::new(std::rc::Rc::new(vec![1, 2, 3]));
+    assert!(ThreadBound::is_usable(&tb));
+    assert_eq!(tb.len(), 3);
+    std::rc::Rc::make_mut(&mut tb).push(4);
+    assert_eq!(**tb, vec![1, 2, 3, 4]);
+    assert_eq!(*ThreadBound::into_inner(tb), vec![1, 2, 3, 4]);
+}
+
+#[cfg_attr(not(all(target_family = "wasm", feature = "web")), tokio::test)]
+#[cfg_attr(all(target_family = "wasm", feature = "web"), wasm_bindgen_test)]
+async fn thread_bound_future_can_be_spawned() {
+    // A `!Send` future wrapped in `ThreadBound` satisfies the `Send` bound
+    // required for spawning on native, and is polled from its home thread.
+    let rc = std::rc::Rc::new(7u32);
+    let fut = ThreadBound::new(async move { *rc + 1 });
+    assert_eq!(task::spawn(fut).await.unwrap(), 8);
 }

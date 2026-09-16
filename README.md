@@ -57,7 +57,9 @@ Wokio provides a few items that have no Tokio counterpart:
   * [`task::spawn_named()`] for spawning named tasks (only effective when `task-names`
     feature is active *and* the crate is built with `RUSTFLAGS=--cfg tokio_unstable`)
   * [`runtime::HandleExt`] and [`task::JoinSetExt`] providing named task spawning,
-  * [`time::IntervalStream`] and [`time::interval_stream()`].
+  * [`time::IntervalStream`] and [`time::interval_stream()`],
+  * [`task::ThreadBound`] to make a `!Send + !Sync` value, such as a JavaScript
+    object, `Send + Sync` by binding it to the thread that created it.
 
 [`task::has_threads()`]: https://docs.rs/wokio/latest/wokio/task/fn.has_threads.html
 [`task::is_blocking_allowed()`]: https://docs.rs/wokio/latest/wokio/task/fn.is_blocking_allowed.html
@@ -67,6 +69,7 @@ Wokio provides a few items that have no Tokio counterpart:
 [`task::JoinSetExt`]: https://docs.rs/wokio/latest/wokio/task/trait.JoinSetExt.html
 [`time::IntervalStream`]: https://docs.rs/wokio/latest/wokio/time/struct.IntervalStream.html
 [`time::interval_stream()`]: https://docs.rs/wokio/latest/wokio/time/fn.interval_stream.html
+[`task::ThreadBound`]: https://docs.rs/wokio/latest/wokio/task/struct.ThreadBound.html
 
 ## Development
 
